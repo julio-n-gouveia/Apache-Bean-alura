@@ -2,7 +2,8 @@ from ast import Return
 from ntpath import join
 import re
 import apache_beam as beam
-from apache_beam.io import ReadFromText, WriteToText
+from apache_beam.io import ReadFromText
+from apache_beam.io.textio import WriteToText
 from apache_beam.options.pipeline_options import PipelineOptions
 
 pipeline_options = PipelineOptions(argc=None)
@@ -83,7 +84,7 @@ def preparar_csv(elemento, delimitador=';'):
 dengue = (
     pipeline
     |"Leitura do dataset de dengue" >>
-    ReadFromText('sample_casos_dengue.txt', skip_header_lines=1)
+    ReadFromText('casos_dengue.txt', skip_header_lines=1)
     | "De texto para lista" >> beam.Map(lista)
     | "De lista para dicionário" >> beam.Map(lista_dicionario, colunas_dengue)
     | "Criar campo ano_mes" >> beam.Map(trata_data)
@@ -96,7 +97,7 @@ dengue = (
 chuvas = (
     pipeline
     |"Leitura do dataset de chuvas" >>
-    ReadFromText('sample_chuvas.csv', skip_header_lines=1)
+    ReadFromText('chuvas.csv', skip_header_lines=1)
     | "De texto para chuva" >> beam.Map(lista, delimitador=",")
     | "criando chave UF-ANO-MES" >> beam.Map(chave_uf_ano_mes)
     | "Somar total de chuvas pela chave" >> beam.CombinePerKey(sum)
@@ -111,6 +112,8 @@ resultado = (
     |"Prepparar csv" >> beam.Map(preparar_csv)
 )
 
-resultado | "Criar arquivo CSV" >> WriteToText('resultado', file_name_sulfix='.csv')
+header = 'UF;ANO;MES;CHUVA;DENGUE'
+
+resultado | 'Criar arquivo CSV' >> WriteToText('resultado', file_name_suffix='.csv', header=header)
 
 pipeline.run()
